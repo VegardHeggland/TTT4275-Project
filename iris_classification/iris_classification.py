@@ -1,24 +1,25 @@
-from sklearn.datasets import load_iris
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import ConfusionMatrixDisplay
 
-# Data for the whole iris dataset
-iris_data = np.loadtxt("iris_detection/classes/iris_data", delimiter=",", usecols=(0, 1, 2, 3))
-setosa = iris_data[0:50]
-versicolor = iris_data[50:100]
-virginica = iris_data[100:150]
-
+# Constants
 n_training_samples = 30 # Number of training samples per class
+iterations = 3000
 
-# Functions
-def get_training_data(start):
+### Functions ###
+def get_training_data(data, start):
+    setosa = data[0:50]
+    versicolor = data[50:100]
+    virginica = data[100:150]
+    
+    # Training data
     setosa_train = setosa[start:(start + n_training_samples)]
     versicolor_train = versicolor[start:(start + n_training_samples)]
     virginica_train = virginica[start:(start + n_training_samples)]
     training_data = np.vstack((setosa_train, versicolor_train, virginica_train))
     
-    # Training labels
+    # Training target labels
     setosa_labels = np.kron(np.array([1, 0, 0]), np.ones((n_training_samples, 1)))
     versicolor_labels = np.kron(np.array([0, 1, 0]), np.ones((n_training_samples, 1)))
     virginica_labels = np.kron(np.array([0, 0, 1]), np.ones((n_training_samples, 1)))
@@ -26,13 +27,18 @@ def get_training_data(start):
     
     return training_data, training_labels
 
-def get_test_data(start):
+def get_test_data(data, start):
+    setosa = data[0:50]
+    versicolor = data[50:100]
+    virginica = data[100:150]
+    
+    # Test data
     setosa_test = setosa[start:(start + (50-n_training_samples))]
     versicolor_test = versicolor[start:(start + (50-n_training_samples))]
     virginica_test = virginica[start:(start + (50-n_training_samples))]
     test_data = np.vstack((setosa_test, versicolor_test, virginica_test))
     
-    # Testing labels
+    # Testing target labels
     setosa_labels_test = np.kron(np.array([1, 0, 0]), np.ones((50-n_training_samples, 1)))
     versicolor_labels_test = np.kron(np.array([0, 1, 0]), np.ones((50-n_training_samples, 1)))
     virginica_labels_test = np.kron(np.array([0, 0, 1]), np.ones((50-n_training_samples, 1)))
@@ -46,234 +52,183 @@ def sigmoid(x):
 def train_linear_classifier(X, t, alpha, iterations):
     N, D = X.shape
     C = t.shape[1]
+    X_aug = np.hstack((X, np.ones((N, 1)))).T
+    t = t.T
     
-    # Add bias term
-    X_aug = np.hstack((X, np.ones((N, 1))))
-    
-    # Usikker på hvordan vi skal initialisere vektene
-    # Zero initialization
-    #W = np.zeros((D + 1, C))  # Shape: (D+1, C)
-    
-    # Randomly initialize weights
-    #W = np.random.uniform(-1, 1, (D + 1, C))
-    
-    # Initialize weights with Xavier initialization
-    #limit = np.sqrt(1 / D)
-    #W = np.random.uniform(-limit, limit, size=(D + 1, C))  # Shape: (D+1, C)
-    
-    # Initialize weights with a small random value
-    W = np.random.randn(D+1, C) * 0.3
-    
-    # Store MSE for each iteration
+    W = np.zeros((C, D+1))
     losses = []
     
     for _ in range(iterations):
-        z = np.dot(X_aug, W)
+        z = np.dot(W, X_aug)
         g = sigmoid(z)
         
-        # Compute the gradient, ikke helt fornøyd med navnene
+        # Compute the gradient
         error = g - t
         sigmoid_derivative = g * (1 - g)
-        weight_gradient = np.dot(X_aug.T, (error * sigmoid_derivative)) / N
+        mse_grad_W = np.dot(error * sigmoid_derivative, X_aug.T)
         
         # Update weights
-        W -= alpha * weight_gradient
+        W -= alpha * mse_grad_W
         
-        # Compute the loss (mean squared error)
+        # Compute the mean square error
         loss = np.mean((g - t) ** 2)
         losses.append(loss)
         
     return W, losses
     
 def predict(X, W):
-    X_aug = np.hstack((X, np.ones((X.shape[0], 1))))
-    
-    z = np.dot(X_aug, W)
+    X_aug = np.hstack((X, np.ones((X.shape[0], 1)))).T
+    z = np.dot(W, X_aug)
     g = sigmoid(z)
     
-    return g
+    return g.T
 
-def confusion_matrix(y_true, y_pred):
-    cm = np.zeros((3, 3), dtype=int)
+def make_confusion_matrix(y_true, y_pred):
+    confusion_matrix = np.zeros((3, 3), dtype=int)
     
     for i in range(len(y_true)):
-        cm[y_true[i], y_pred[i]] += 1
+        confusion_matrix[y_true[i], y_pred[i]] += 1
         
-    return cm
+    return confusion_matrix
 
-### Task 1 ###
-alphas = [0.001, 0.01, 0.1, 1]
-iterations = 10000
-plt.figure(figsize=(10, 6))
-
-# Training data
-training_data, training_labels = get_training_data(0)
-test_data, test_labels = get_test_data(30)
-
-for alpha in alphas:
-    print(f"Training with alpha = {alpha}")
-    
-    # Train the linear classifier
-    weight_matrix, losses = train_linear_classifier(training_data, training_labels, alpha, iterations)
-    
-    # Predict on the test data
-    predictions = predict(test_data, weight_matrix)
-    
-    # Convert labels to class labels
-    predicted_labels = np.argmax(predictions, axis=1)
-    true_labels = np.argmax(test_labels, axis=1)
-    
-    # Calculate accuracy
-    accuracy = np.mean(predicted_labels == true_labels)
-    print(f"Accuracy: {accuracy * 100:.2f}%")
-    
-    # Calculate error rate
-    error_rate = 1 - accuracy
-    print(f"Error rate: {error_rate * 100:.2f}%")
-    
-    # Confusion matrix
-    cm = confusion_matrix(true_labels, predicted_labels)
-    print("Confusion Matrix:")
-    print(cm)
-    
-    # Plotting the loss function
-    plt.plot(range(iterations), losses, label=f'alpha={alpha}')
-    
-    print ("-" * 50)
-
-# Plotting the loss function
-plt.title("Loss Function vs Iterations")
-plt.xlabel("Iterations")
-plt.ylabel("Loss (MSE)")
-plt.legend()
-plt.grid()
-plt.show()
-
-# Using the last 30 samples of each class for training
-alpha = 0.01
-iterations = 10000
-training_data2, training_labels2 = get_training_data(20)
-test_data2, test_labels2 = get_test_data(0)
-
-weight_matrix2, losses2 = train_linear_classifier(training_data2, training_labels2, alpha, iterations)
-predictions2 = predict(test_data2, weight_matrix2)
-predicted_labels2 = np.argmax(predictions2, axis=1)
-true_labels2 = np.argmax(test_labels2, axis=1)
-
-# Calculate accuracy
-accuracy2 = np.mean(predicted_labels2 == true_labels2)
-print(f"Accuracy with new training set: {accuracy2 * 100:.2f}%")
-
-# Calculate error rate
-error_rate2 = 1 - accuracy2
-print(f"Error rate with new training set: {error_rate2 * 100:.2f}%")
-
-# Confusion matrix for the new training set
-cm2 = confusion_matrix(true_labels2, predicted_labels2)
-print("Confusion Matrix with new training set:")
-print(cm2)
-
-# Ser ut som det alltid er like bra eller bedre å bruke de første 30 prøvene av hver klasse. Endret på koden, og nå er det motsatt tilfelle?
-# Kan prøve litt forskjellige metoder for å finne alpha (for rapportens skyld). Vanligvis tester man seg bare frem
-# Vis hva man får dersom man bruker andre algoritmer (vegard brukte innebygde libraries i ML, kan gjøre det her også)
-
-### Task 2 ###
-## Plotting histograms for each feature and class
-def plot_histogram(feature_index, feature_name):
-    plt.figure(figsize=(10, 6))
-    plt.hist(setosa[:, feature_index], bins=20, color="red", alpha=0.5, label='Setosa')
-    plt.hist(versicolor[:, feature_index], bins=20, color="green", alpha=0.5, label='Versicolor')
-    plt.hist(virginica[:, feature_index], bins=20, color="blue", alpha=0.5, label='Virginica')
-    plt.legend(loc='upper right')
-    plt.title(f"{feature_name} in cm")
-    plt.xlabel(feature_name)
-    plt.ylabel("Count")
+def plot_confusion_matrix(confusion_matrix, title):
+    disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=['Setosa', 'Versicolor', 'Virginica'])
+    ax = disp.plot(cmap=plt.cm.Blues)
+    ax.ax_.set_yticklabels(['Setosa', 'Versicolor', 'Virginica'], rotation=90)
+    plt.title(title)
     plt.show()
 
-def plot_all_histograms():
-    plot_histogram(0, "Sepal Length (cm)")
-    plot_histogram(1, "Sepal Width (cm)")
-    plot_histogram(2, "Petal Length (cm)")
-    plot_histogram(3, "Petal Width (cm)")
+def plot_histogram(data, feature_index, feature_name, ax):
+    setosa = data[0:50]
+    versicolor = data[50:100]
+    virginica = data[100:150]
 
-plot_all_histograms()
+    data_sets = [
+        (setosa[:, feature_index], "red", "Setosa"),
+        (versicolor[:, feature_index], "green", "Versicolor"),
+        (virginica[:, feature_index], "blue", "Virginica")
+    ]
 
-# Remove the most overlapping feature
-iris_data = np.loadtxt("iris_detection/classes/iris_data", delimiter=",", usecols=(0, 2, 3))
-setosa = iris_data[0:50]
-versicolor = iris_data[50:100]
-virginica = iris_data[100:150]
+    for data, color, label in data_sets:
+        ax.hist(data, bins=20, density=True, alpha=0.5, color=color, label=label)
+        sns.kdeplot(data, color=color, linewidth=2, alpha = 0.5, ax=ax)
 
-training_data, training_labels = get_training_data(0)
-test_data, test_labels = get_test_data(30)
+    ax.set_title(f"{feature_name} in cm")
+    ax.set_xlabel(feature_name)
+    ax.set_ylabel("Density")
+    ax.legend(loc='upper right')
 
-# Train the linear classifier
-weight_matrix, losses = train_linear_classifier(training_data, training_labels, alpha, iterations)
-predictions = predict(test_data, weight_matrix)
-predicted_labels = np.argmax(predictions, axis=1)
-true_labels = np.argmax(test_labels, axis=1)
+def plot_all_histograms(data):
+    fig, axs = plt.subplots(2, 2, figsize=(12, 8))
+    axs = axs.flatten()
+    
+    feature_names = ["Sepal Length", "Sepal Width", "Petal Length", "Petal Width"]  
+    
+    for i in range(4):
+        plot_histogram(data, i, feature_names[i], axs[i])
+    
+    plt.tight_layout() # To prevent figures from overlapping
+    plt.show()
 
-# Calculate accuracy and error rate
-accuracy = np.mean(predicted_labels == true_labels)
-print(f"Accuracy with new feature set: {accuracy * 100:.2f}%")
-error_rate = 1 - accuracy
-print(f"Error rate with new feature set: {error_rate * 100:.2f}%")
+def run_full_test(alpha, training_data, training_labels, test_data, test_labels):
+    # Train and predict
+    weight_matrix, _ = train_linear_classifier(training_data, training_labels, alpha, iterations)
+    print(weight_matrix)
+    
+    training_predictions = predict(training_data, weight_matrix)
+    test_predictions = predict(test_data, weight_matrix)
+    
+    # Convert labels to class labels
+    training_predicted_labels = np.argmax(training_predictions, axis=1)
+    training_true_labels = np.argmax(training_labels, axis=1)
+    test_predicted_labels = np.argmax(test_predictions, axis=1)
+    test_true_labels = np.argmax(test_labels, axis=1)
+    
+    # Calculate error rates
+    training_accuracy = np.mean(training_predicted_labels == training_true_labels)
+    error_rate_train = 1 - training_accuracy
+    print(f"Training error rate: {error_rate_train * 100:.2f}%")
+    
+    test_accuracy = np.mean(test_predicted_labels == test_true_labels)
+    test_error_rate = 1 - test_accuracy
+    print(f"Testing error rate: {test_error_rate * 100:.2f}%")
+    
+    # Confusion matrices
+    training_confusion_matrix = make_confusion_matrix(training_true_labels, training_predicted_labels)
+    plot_confusion_matrix(training_confusion_matrix, "Confusion Matrix for Training Data")
+    
+    test_confusion_matrix = make_confusion_matrix(test_true_labels, test_predicted_labels)
+    plot_confusion_matrix(test_confusion_matrix, "Confusion Matrix for Test Data")
 
-# Confusion matrix
-cm = confusion_matrix(true_labels, predicted_labels)
-print("Confusion Matrix with new feature set:")
-print(cm)
+### Task 1 ###
+def task1b():
+    iris_data = np.loadtxt("iris_classification/classes/iris_data", delimiter=",", usecols=(0, 1, 2, 3))
+    training_data, training_labels = get_training_data(iris_data, 0)
+    
+    alphas = [0.0001, 0.001, 0.01, 0.1, 1]
 
-# Remove the 2 most overlapping features
-iris_data = np.loadtxt("iris_detection/classes/iris_data", delimiter=",", usecols=(2, 3))
-setosa = iris_data[0:50]
-versicolor = iris_data[50:100]
-virginica = iris_data[100:150]
+    plt.figure(figsize=(10, 6))
+    
+    for alpha in alphas:
+        weight_matrix, losses = train_linear_classifier(training_data, training_labels, alpha, iterations)
+        print(weight_matrix)
+        plt.plot(range(iterations), losses, label=f'alpha={alpha}')
 
-training_data, training_labels = get_training_data(0)
-test_data, test_labels = get_test_data(30)
+    # Plotting the loss function
+    plt.title("Mean Square Error")
+    plt.xlabel("Iterations")
+    plt.ylabel("Mean square error")
+    plt.legend()
+    plt.grid()
+    plt.show()
+    
+def task1c():
+    iris_data = np.loadtxt("iris_classification/classes/iris_data", delimiter=",", usecols=(0, 1, 2, 3))
+    alpha = 0.01
+    training_data, training_labels = get_training_data(iris_data, 0)
+    test_data, test_labels = get_test_data(iris_data, 30)
+    
+    run_full_test(alpha, training_data, training_labels, test_data, test_labels)
+    
+def task1d():
+    iris_data = np.loadtxt("iris_classification/classes/iris_data", delimiter=",", usecols=(0, 1, 2, 3))
+    alpha = 0.01
+    training_data, training_labels = get_training_data(iris_data, 20)
+    test_data, test_labels = get_test_data(iris_data, 0)
+        
+    run_full_test(alpha, training_data, training_labels, test_data, test_labels)
 
-# Train the linear classifier
-weight_matrix, losses = train_linear_classifier(training_data, training_labels, alpha, iterations)
-predictions = predict(test_data, weight_matrix)
-predicted_labels = np.argmax(predictions, axis=1)
-true_labels = np.argmax(test_labels, axis=1)
+### Task 2 ###
+def task2():
+    iris_data = np.loadtxt("iris_classification/classes/iris_data", delimiter=",", usecols=(0, 1, 2, 3))
+    alpha = 0.01
+    
+    plot_all_histograms(iris_data)
 
-# Calculate accuracy and error rate
-accuracy = np.mean(predicted_labels == true_labels)
-print(f"Accuracy with only two features: {accuracy * 100:.2f}%")
-error_rate = 1 - accuracy
-print(f"Error rate with only two features: {error_rate * 100:.2f}%")
+    # Remove the most overlapping feature
+    iris_data = np.loadtxt("iris_classification/classes/iris_data", delimiter=",", usecols=(0, 2, 3))
+    training_data, training_labels = get_training_data(iris_data, 0)
+    test_data, test_labels = get_test_data(iris_data, 30)
 
-# Confusion matrix
-cm = confusion_matrix(true_labels, predicted_labels)
-print("Confusion Matrix with only two features:")
-print(cm)
+    run_full_test(alpha, training_data, training_labels, test_data, test_labels)
 
-# Remove the 3 most overlapping features
-iris_data = np.loadtxt("iris_detection/classes/iris_data", delimiter=",", usecols=(3))
-iris_data = np.expand_dims(iris_data, axis=1) # Needs to be 2D for the classifier
+    # Remove the 2 most overlapping features
+    iris_data = np.loadtxt("iris_classification/classes/iris_data", delimiter=",", usecols=(2, 3))
+    training_data, training_labels = get_training_data(iris_data, 0)
+    test_data, test_labels = get_test_data(iris_data, 30)
 
-setosa = iris_data[0:50]
-versicolor = iris_data[50:100]
-virginica = iris_data[100:150]
+    run_full_test(alpha, training_data, training_labels, test_data, test_labels)
 
-training_data, training_labels = get_training_data(0)
-test_data, test_labels = get_test_data(30)
+    # Remove the 3 most overlapping features
+    iris_data = np.loadtxt("iris_classification/classes/iris_data", delimiter=",", usecols=(3))
+    iris_data = np.expand_dims(iris_data, axis=1) # Needs to be 2D for the classifier
+    training_data, training_labels = get_training_data(iris_data, 0)
+    test_data, test_labels = get_test_data(iris_data, 30)
 
-# Train the linear classifier
-weight_matrix, losses = train_linear_classifier(training_data, training_labels, alpha, iterations)
-predictions = predict(test_data, weight_matrix)
-predicted_labels = np.argmax(predictions, axis=1)
-true_labels = np.argmax(test_labels, axis=1)
+    run_full_test(alpha, training_data, training_labels, test_data, test_labels)
 
-# Calculate accuracy and error rate
-accuracy = np.mean(predicted_labels == true_labels)
-print(f"Accuracy with only one feature: {accuracy * 100:.2f}%")
-error_rate = 1 - accuracy
-print(f"Error rate with only one feature: {error_rate * 100:.2f}%")
-
-# Confusion matrix
-cm = confusion_matrix(true_labels, predicted_labels)
-print("Confusion Matrix with only one feature:")
-print(cm)
+### Call the tasks ###
+task1b()
+task1c()
+task1d()
+task2()
