@@ -91,11 +91,23 @@ def make_confusion_matrix(y_true, y_pred):
         
     return confusion_matrix
 
-def plot_confusion_matrix(confusion_matrix, title):
-    disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=['Setosa', 'Versicolor', 'Virginica'])
-    ax = disp.plot(cmap=plt.cm.Blues)
-    ax.ax_.set_yticklabels(['Setosa', 'Versicolor', 'Virginica'], rotation=90)
-    plt.title(title)
+def plot_confusion_matrices(confusion_matrix_training, title_training, confusion_matrix_test, title_test):
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    disp_train = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix_training, display_labels=['Setosa', 'Versicolor', 'Virginica'])
+    disp_train.plot(ax=axes[0], cmap=plt.cm.Blues, colorbar=True)
+    axes[0].set_title(title_training)
+    axes[0].set_ylabel('True label')
+    axes[0].set_xlabel('Predicted label')
+    axes[0].set_yticklabels(['Setosa', 'Versicolor', 'Virginica'], rotation=90)
+
+    disp_test = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix_test, display_labels=['Setosa', 'Versicolor', 'Virginica'])
+    disp_test.plot(ax=axes[1], cmap=plt.cm.Blues, colorbar=True)
+    axes[1].set_title(title_test)
+    axes[1].set_ylabel('True label')
+    axes[1].set_xlabel('Predicted label')
+    axes[1].set_yticklabels(['Setosa', 'Versicolor', 'Virginica'], rotation=90)
+
     plt.show()
 
 def plot_histogram(data, feature_index, feature_name, ax):
@@ -155,10 +167,9 @@ def run_full_test(alpha, training_data, training_labels, test_data, test_labels)
     
     # Confusion matrices
     training_confusion_matrix = make_confusion_matrix(training_true_labels, training_predicted_labels)
-    plot_confusion_matrix(training_confusion_matrix, "Confusion Matrix for Training Data")
-    
     test_confusion_matrix = make_confusion_matrix(test_true_labels, test_predicted_labels)
-    plot_confusion_matrix(test_confusion_matrix, "Confusion Matrix for Test Data")
+    
+    plot_confusion_matrices(training_confusion_matrix, "Confusion Matrix for Training Data", test_confusion_matrix, "Confusion Matrix for Test Data")
 
 ### Task 1 ###
 def task1b():
