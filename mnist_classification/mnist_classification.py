@@ -42,15 +42,8 @@ def cluster(X_train, y_train):
         
     return clusters, y_temp
 
-
-
 # TASK 1 - Nearest Neighbor:
 def runTask1(X_train, y_train, X_test, y_test):
-    
-    # '''FAST EXECUTION MODE'''
-    # X_train = X_train[:1000]
-    # y_train = y_train[:1000]
-
     time_start = time.time()
     y_pred = kNN(X_train, y_train, X_test, 1)
     time_end = time.time()
@@ -71,27 +64,11 @@ def runTask1(X_train, y_train, X_test, y_test):
     # Missclassified images
     misclassified_indices = np.where(y_pred != y_test)[0]
     fig, ax = plt.subplots(1, 4, figsize=(10, 4))
-    # for i in range(10):
-    #     ax[i].set_title(f"Predicted: {y_pred[misclassified_indices[i]]}\nTrue: {y_test[misclassified_indices[i]]}", fontsize=12)
-    #     ax[i].imshow(X_test[misclassified_indices[i]].reshape(28, 28))
-    #     ax[i].axis('off')
+    for i in range(10):
+        ax[i].set_title(f"Predicted: {y_pred[misclassified_indices[i]]}\nTrue: {y_test[misclassified_indices[i]]}", fontsize=12)
+        ax[i].imshow(X_test[misclassified_indices[i]].reshape(28, 28))
+        ax[i].axis('off')
 
-    ax[0].set_title(f"Predicted: {y_pred[misclassified_indices[0]]}\nTrue: {y_test[misclassified_indices[0]]}", fontsize=12)
-    ax[0].imshow(X_test[misclassified_indices[0]].reshape(28, 28))
-    ax[0].axis('off')
-
-    ax[1].set_title(f"Predicted: {y_pred[misclassified_indices[2]]}\nTrue: {y_test[misclassified_indices[2]]}", fontsize=12)
-    ax[1].imshow(X_test[misclassified_indices[2]].reshape(28, 28))
-    ax[1].axis('off')
-
-    ax[2].set_title(f"Predicted: {y_pred[misclassified_indices[3]]}\nTrue: {y_test[misclassified_indices[3]]}", fontsize=12)
-    ax[2].imshow(X_test[misclassified_indices[3]].reshape(28, 28))
-    ax[2].axis('off')
-
-    ax[3].set_title(f"Predicted: {y_pred[misclassified_indices[6]]}\nTrue: {y_test[misclassified_indices[6]]}", fontsize=12)
-    ax[3].imshow(X_test[misclassified_indices[6]].reshape(28, 28))
-    ax[3].axis('off')
-    
     plt.suptitle("Misclassified Images", fontsize=14, fontweight='bold')
     plt.tight_layout()
     plt.savefig("mnist_classification/figures/misclassified.eps", format='eps')
@@ -110,7 +87,6 @@ def runTask1(X_train, y_train, X_test, y_test):
     plt.savefig("mnist_classification/figures/correctly_classified.eps", format='eps')
     plt.show()
 
-
 # TASK 2 - k-Nearest Neigbors with clustering:
 def runTask2(X_train, y_train, X_test, y_test):
    
@@ -127,7 +103,6 @@ def runTask2(X_train, y_train, X_test, y_test):
     print(f"Error rate: {error_rate}")
     print(f"Execution time: {time_end - time_start} seconds")
     
-
     # k-NN with clustering and k=7:
     time_start = time.time()
     clusters, y_temp = cluster(X_train, y_train)
@@ -155,8 +130,7 @@ def runTask2(X_train, y_train, X_test, y_test):
     plt.savefig("confusion_matrix_k1_k7_clustered.eps", format='eps')
     plt.show()
 
-    
 
 runTask1(X_train, y_train, X_test, y_test)
-#runTask2(X_train, y_train, X_test, y_test)
+runTask2(X_train, y_train, X_test, y_test)
 
