@@ -64,7 +64,7 @@ def runTask1(X_train, y_train, X_test, y_test):
     # Missclassified images
     misclassified_indices = np.where(y_pred != y_test)[0]
     fig, ax = plt.subplots(1, 4, figsize=(10, 4))
-    for i in range(10):
+    for i in range(4):
         ax[i].set_title(f"Predicted: {y_pred[misclassified_indices[i]]}\nTrue: {y_test[misclassified_indices[i]]}", fontsize=12)
         ax[i].imshow(X_test[misclassified_indices[i]].reshape(28, 28))
         ax[i].axis('off')
