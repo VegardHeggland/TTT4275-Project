@@ -4,7 +4,7 @@ import seaborn as sns
 from sklearn.metrics import ConfusionMatrixDisplay
 
 # Constants
-n_training_samples = 30 # Number of training samples per class
+n_training_samples = 30
 iterations = 3000
 
 ### Functions ###
@@ -13,13 +13,11 @@ def get_training_data(data, start):
     versicolor = data[50:100]
     virginica = data[100:150]
     
-    # Training data
     setosa_train = setosa[start:(start + n_training_samples)]
     versicolor_train = versicolor[start:(start + n_training_samples)]
     virginica_train = virginica[start:(start + n_training_samples)]
     training_data = np.vstack((setosa_train, versicolor_train, virginica_train))
     
-    # Training target labels
     setosa_labels = np.kron(np.array([1, 0, 0]), np.ones((n_training_samples, 1)))
     versicolor_labels = np.kron(np.array([0, 1, 0]), np.ones((n_training_samples, 1)))
     virginica_labels = np.kron(np.array([0, 0, 1]), np.ones((n_training_samples, 1)))
@@ -32,13 +30,11 @@ def get_test_data(data, start):
     versicolor = data[50:100]
     virginica = data[100:150]
     
-    # Test data
     setosa_test = setosa[start:(start + (50-n_training_samples))]
     versicolor_test = versicolor[start:(start + (50-n_training_samples))]
     virginica_test = virginica[start:(start + (50-n_training_samples))]
     test_data = np.vstack((setosa_test, versicolor_test, virginica_test))
     
-    # Testing target labels
     setosa_labels_test = np.kron(np.array([1, 0, 0]), np.ones((50-n_training_samples, 1)))
     versicolor_labels_test = np.kron(np.array([0, 1, 0]), np.ones((50-n_training_samples, 1)))
     virginica_labels_test = np.kron(np.array([0, 0, 1]), np.ones((50-n_training_samples, 1)))
@@ -185,7 +181,6 @@ def task1b():
         print(weight_matrix)
         plt.plot(range(iterations), losses, label=f'alpha={alpha}')
 
-    # Plotting the loss function
     plt.title("Mean Square Error")
     plt.xlabel("Iterations")
     plt.ylabel("Mean square error")
