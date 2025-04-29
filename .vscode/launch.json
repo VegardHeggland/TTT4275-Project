@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/baotran/Downloads/20250411_141822",
+      "program": "/Users/baotran/Downloads/20250411_141822/build/Debug/outDebug"
+    }
+  ]
+}
